@@ -6,7 +6,8 @@ function App() {
   const [logs, setLogs] = React.useState([]);
   const [connected, setConnected] = React.useState(false);
 
-  const baseUrl = 'http://145.223.31.139:8080';
+  // Base URL para as chamadas da API na Vercel
+  const baseUrl = '/api';
 
   const addLog = (msg, type='info') => {
     setLogs(prev => [...prev, {time: new Date().toLocaleTimeString(), msg, type}]);
