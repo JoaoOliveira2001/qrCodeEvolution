@@ -3,6 +3,8 @@ function App() {
   const [apiKey, setApiKey] = React.useState("");
   const [qrCode, setQrCode] = React.useState(null);
   const [countdown, setCountdown] = React.useState(30);
+  const [refreshCounter, setRefreshCounter] = React.useState(0);
+  const countdownRef = React.useRef(null);
   const [logs, setLogs] = React.useState([]);
   const [connected, setConnected] = React.useState(false);
 
@@ -11,6 +13,27 @@ function App() {
 
   const addLog = (msg, type='info') => {
     setLogs(prev => [...prev, {time: new Date().toLocaleTimeString(), msg, type}]);
+  };
+
+  const startCountdown = () => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setCountdown(30);
+    countdownRef.current = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) {
+          generateQRCode();
+          return 30;
+        }
+        return c - 1;
+      });
+    }, 1000);
+  };
+
+  const stopCountdown = () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
   };
 
   const generateQRCode = async () => {
@@ -44,29 +67,17 @@ function App() {
         return;
       }
       setQrCode(data.code);
+      setRefreshCounter(c => c + 1);
       setConnected(false);
       addLog('QR Code obtido', 'success');
-      setCountdown(30);
+      startCountdown();
     } catch(err) {
       console.error(err);
       addLog(`Erro: ${err.message}`, 'error');
     }
   };
 
-  React.useEffect(() => {
-    if (qrCode === null) return;
-    const id = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) {
-          clearInterval(id);
-          generateQRCode();
-          return 30;
-        }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [qrCode]);
+
 
   React.useEffect(() => {
     if (!instance || !apiKey) return;
@@ -89,6 +100,7 @@ function App() {
 
   React.useEffect(() => {
     if (connected) {
+      stopCountdown();
       setQrCode(null);
     }
   }, [connected]);
@@ -103,7 +115,11 @@ function App() {
         }
       });
     }
-  }, [qrCode]);
+  }, [qrCode, refreshCounter]);
+
+  React.useEffect(() => {
+    return () => stopCountdown();
+  }, []);
 
   return (
     <div className="p-4 max-w-md mx-auto space-y-4">
